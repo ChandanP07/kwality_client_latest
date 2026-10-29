@@ -210,7 +210,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 }
 
 // Logo Component for expanded sidebar
-export const Logo = () => {
+const Logo = () => {
   return (
     <div className="font-normal flex space-x-2 items-center text-sm py-1 relative z-20">
       <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -228,7 +228,7 @@ export const Logo = () => {
 };
 
 // Logo Icon for collapsed sidebar
-export const LogoIcon = () => {
+const LogoIcon = () => {
   return (
     <div className="font-normal flex space-x-2 items-center text-sm py-1 relative z-20">
       <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">

@@ -2,16 +2,16 @@
 import { motion } from 'framer-motion';
 
 const clients = [
-  { name: '360 One WAM',               logo: '/clieents/360-one.png' },
-  { name: 'Jeena & Company',           logo: '/clients/jeena.jpg' },
-  { name: 'Shivam Autozone',           logo: '/clients/shivam-autozone.png' },
+  { name: '360 One WAM', logo: '/clients/360-one.png' },
+  { name: 'Jeena & Company', logo: '/clients/jeena.jpg' },
+  { name: 'Shivam Autozone', logo: '/clients/shivam-autozone.png' },
   { name: 'Sky High Airport Services', logo: '/clients/sky-high.png' },
-  { name: 'SSS Sai Shipping',          logo: '/clients/sss-sai.png' },
-  { name: 'Trail Blazer Tours',        logo: '/clients/trail-blazer.png' },
-  { name: 'TAC Logistics',             logo: '/clients/tac-logistics.png' },
-  { name: 'JP Infra',                  logo: '/clients/jp-infra.jpg' }, 
-  { name: 'Gurukrupa Realcon',         logo: '/clients/gurukrupa.png' },
-  { name: 'Global Vectra Helicorp',    logo: '/clients/global-vectra.png' },
+  { name: 'SSS Sai Shipping', logo: '/clients/sss-sai.png' },
+  { name: 'Trail Blazer Tours', logo: '/clients/trail-blazer.png' },
+  { name: 'TAC Logistics', logo: '/clients/tac-logistics.png' },
+  { name: 'JP Infra', logo: '/clients/jp-infra.jpg' },
+  { name: 'Gurukrupa Realcon', logo: '/clients/gurukrupa.png' },
+  { name: 'Global Vectra Helicorp', logo: '/clients/global-vectra.png' },
 ];
 
 // Duplicate for seamless infinite scroll
@@ -65,10 +65,10 @@ export default function ClientLogosSection() {
                 title={client.name}
               >
                 <img
-                src={client.logo}
-                alt={client.name}
-                className="max-w-full max-h-full object-contain"
-              />
+                  src={client.logo}
+                  alt={client.name}
+                  className="max-w-full max-h-full object-contain"
+                />
               </div>
             ))}
           </motion.div>

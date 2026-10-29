@@ -248,10 +248,12 @@ export default function NewOrderPage() {
   const fetchLocations = async () => {
     try {
       const data = await api.get<any[]>('/locations');
-      const allLocations = data.flatMap((branch: any) => branch.locations ?? []);
-      setLocations(allLocations);
+      if (Array.isArray(data)) {
+        const allLocations = data.flatMap((branch: any) => branch.locations ?? []);
+        setLocations(allLocations);
+      }
     } catch (error) {
-      console.error('Error fetching locations:', error);
+      console.warn('Could not fetch locations from server, using default locations:', error);
     }
   };
 
