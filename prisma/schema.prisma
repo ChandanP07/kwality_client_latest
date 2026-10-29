@@ -208,7 +208,8 @@ model Client {
   payments      Payment[]
 
   // Portal link
-  clientProfile ClientProfile?
+  clientProfile    ClientProfile?
+  clientBillSetting ClientBillSetting?
 
   @@map("clients")
 }
