@@ -22,14 +22,25 @@ export function formatCurrency(amount: number): string {
 }
 
 export function getStatusColor(status: string): string {
+  if (!status) return 'bg-gray-100 text-gray-800';
   const statusColors: Record<string, string> = {
+    // Order statuses
     pending: 'bg-yellow-100 text-yellow-800',
-    processing: 'bg-blue-100 text-blue-800',
+    confirmed: 'bg-blue-100 text-blue-800',
+    processing: 'bg-indigo-100 text-indigo-800',
+    ready: 'bg-purple-100 text-purple-800',
+    dispatched: 'bg-orange-100 text-orange-800',
+    delivered: 'bg-green-100 text-green-800',
     completed: 'bg-green-100 text-green-800',
     cancelled: 'bg-red-100 text-red-800',
-    open: 'bg-orange-100 text-orange-800',
-    closed: 'bg-gray-100 text-gray-800',
+
+    // Complaint statuses
+    open: 'bg-red-100 text-red-800',
+    assigned: 'bg-yellow-100 text-yellow-800',
+    in_progress: 'bg-indigo-100 text-indigo-800',
     resolved: 'bg-green-100 text-green-800',
+    closed: 'bg-gray-100 text-gray-800',
+    reopened: 'bg-orange-100 text-orange-800',
   };
   return statusColors[status.toLowerCase()] || 'bg-gray-100 text-gray-800';
 }

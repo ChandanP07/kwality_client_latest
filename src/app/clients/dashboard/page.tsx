@@ -18,12 +18,30 @@ import {
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { api } from '@/lib/api';
+import { formatDate, getStatusColor } from '@/lib/utils';
 
 interface Stats {
   orders: { total: number; pending: number; completed: number };
   complaints: { total: number; open: number; resolved: number };
   bills: { total: number; paid: number; pending: number; totalAmount: number };
   assets: { total: number };
+}
+
+interface RecentOrder {
+  id: string;
+  orderNumber: string;
+  orderDate: string;
+  productName: string;
+  status: string;
+}
+
+interface RecentComplaint {
+  id: string;
+  complaintNumber: string;
+  reportedDate: string;
+  title: string;
+  problemType: string;
+  status: string;
 }
 
 export default function DashboardPage() {
@@ -35,6 +53,8 @@ export default function DashboardPage() {
     assets: { total: 0 },
   });
   const [loading, setLoading] = useState(true);
+  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
+  const [recentComplaints, setRecentComplaints] = useState<RecentComplaint[]>([]);
 
   useEffect(() => {
     fetchDashboardStats();
@@ -52,13 +72,13 @@ export default function DashboardPage() {
       setStats({
         orders: {
           total: orders.length,
-          pending: orders.filter((o: any) => o.status === 'PENDING' || o.status === 'pending').length,
-          completed: orders.filter((o: any) => o.status === 'DELIVERED' || o.status === 'completed').length,
+          pending: orders.filter((o: any) => ['PENDING', 'CONFIRMED'].includes(o.status)).length,
+          completed: orders.filter((o: any) => o.status === 'DELIVERED').length,
         },
         complaints: {
           total: complaints.length,
-          open: complaints.filter((c: any) => c.status === 'OPEN' || c.status === 'open').length,
-          resolved: complaints.filter((c: any) => ['RESOLVED', 'CLOSED', 'resolved', 'closed'].includes(c.status)).length,
+          open: complaints.filter((c: any) => ['OPEN', 'ASSIGNED', 'IN_PROGRESS', 'REOPENED'].includes(c.status)).length,
+          resolved: complaints.filter((c: any) => ['RESOLVED', 'CLOSED'].includes(c.status)).length,
         },
         bills: {
           total: bills.length,
@@ -70,6 +90,29 @@ export default function DashboardPage() {
           total: assets.length,
         },
       });
+
+      // Populate recent orders (latest 3)
+      setRecentOrders(
+        orders.slice(0, 3).map((o: any) => ({
+          id: o.id,
+          orderNumber: o.orderNumber || '-',
+          orderDate: o.orderDate,
+          productName: o.productName || '-',
+          status: o.status,
+        }))
+      );
+
+      // Populate recent complaints (latest 3)
+      setRecentComplaints(
+        complaints.slice(0, 3).map((c: any) => ({
+          id: c.id,
+          complaintNumber: c.complaintNumber || '-',
+          reportedDate: c.reportedDate || c.createdAt,
+          title: c.title || c.problemType || '-',
+          problemType: c.problemType || '-',
+          status: c.status,
+        }))
+      );
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
     } finally {
@@ -229,44 +272,64 @@ export default function DashboardPage() {
       {/* Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="card">
-          <h2 className="text-xl font-bold mb-4">Recent Orders</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">Recent Orders</h2>
+            <Link href="/clients/order-status" className="text-sm text-blue-600 hover:underline">
+              View All
+            </Link>
+          </div>
           <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <Package className="h-4 w-4 text-blue-600" />
+            {recentOrders.length === 0 ? (
+              <p className="text-gray-500 text-sm py-4 text-center">No orders placed yet</p>
+            ) : (
+              recentOrders.map((order) => (
+                <div key={order.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Package className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{order.orderNumber} - {order.productName}</p>
+                      <p className="text-xs text-gray-500">{formatDate(order.orderDate)}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium">Order #ORD-2024-00{i}</p>
-                    <p className="text-xs text-gray-500">2 hours ago</p>
-                  </div>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                    {order.status}
+                  </span>
                 </div>
-                <span className="badge-info">Processing</span>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
         <div className="card">
-          <h2 className="text-xl font-bold mb-4">Recent Complaints</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">Recent Complaints</h2>
+            <Link href="/clients/complaint-status" className="text-sm text-blue-600 hover:underline">
+              View All
+            </Link>
+          </div>
           <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
-                    <AlertCircle className="h-4 w-4 text-orange-600" />
+            {recentComplaints.length === 0 ? (
+              <p className="text-gray-500 text-sm py-4 text-center">No complaints registered yet</p>
+            ) : (
+              recentComplaints.map((complaint) => (
+                <div key={complaint.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                      <AlertCircle className="h-4 w-4 text-orange-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{complaint.complaintNumber} - {complaint.title}</p>
+                      <p className="text-xs text-gray-500">{formatDate(complaint.reportedDate)}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium">Complaint #CMP-2024-00{i}</p>
-                    <p className="text-xs text-gray-500">{i + 1} hours ago</p>
-                  </div>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(complaint.status)}`}>
+                    {complaint.status}
+                  </span>
                 </div>
-                <span className={i === 1 ? 'badge-warning' : 'badge-success'}>
-                  {i === 1 ? 'Open' : 'Resolved'}
-                </span>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>

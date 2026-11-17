@@ -10,7 +10,9 @@ import { api } from '@/lib/api';
 
 interface Complaint {
   id: string;
+  complaintNumber?: string;
   createdAt: string;
+  reportedDate?: string;
   state: string;
   contactPerson: string;
   contactNumber: string;
@@ -18,14 +20,24 @@ interface Complaint {
   serialNumber: string;
   problemType: string;
   comments?: string;
+  description?: string;
   status: string;
+  resolution?: string;
   branch?: {
     name: string;
     city?: { name: string };
   };
+  location?: {
+    name: string;
+  };
+  assignedTo?: {
+    name: string;
+    username: string;
+  };
   callLogs?: Array<{
     id: string;
     callDate: string;
+    doneDate?: string;
     details?: string;
     loggedBy?: string;
     clientFeedback?: string;
@@ -44,7 +56,15 @@ export default function ComplaintStatusPage() {
 
   const fetchComplaints = async () => {
     try {
-      const data = await api.get<Complaint[]>('/complaints');
+      const rawData = await api.get<any[]>('/complaints');
+      // Map API fields to what the UI expects
+      const data: Complaint[] = rawData.map((c: any) => ({
+        ...c,
+        createdAt: c.reportedDate || c.createdAt,
+        comments: c.description || c.comments || null,
+        productName: c.productName || c.title || '-',
+        serialNumber: c.serialNumber || '-',
+      }));
       setComplaints(data);
     } catch (error) {
       console.error('Error fetching complaints:', error);
@@ -54,6 +74,15 @@ export default function ComplaintStatusPage() {
   };
 
   const columns = [
+    {
+      key: 'complaintNumber',
+      label: 'Complaint #',
+      render: (complaint: Complaint) => (
+        <span className="font-mono text-xs font-medium text-orange-600">
+          {complaint.complaintNumber || '-'}
+        </span>
+      ),
+    },
     {
       key: 'createdAt',
       label: 'Date',
@@ -91,6 +120,7 @@ export default function ComplaintStatusPage() {
   ];
 
   const exportData = complaints.map((complaint) => ({
+    'Complaint #': complaint.complaintNumber || '-',
     Date: formatDate(complaint.createdAt),
     Product: complaint.productName,
     'Serial Number': complaint.serialNumber,
@@ -121,6 +151,38 @@ export default function ComplaintStatusPage() {
           <ExportButton data={exportData} fileName="complaints" />
         </div>
 
+        {/* Summary Statistics */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+          <div className="bg-blue-50 rounded-lg p-4">
+            <p className="text-sm text-gray-600">Total</p>
+            <p className="text-2xl font-bold text-primary">{complaints.length}</p>
+          </div>
+          <div className="bg-red-50 rounded-lg p-4">
+            <p className="text-sm text-gray-600">Open</p>
+            <p className="text-2xl font-bold text-red-600">
+              {complaints.filter(c => c.status === 'OPEN' || c.status === 'REOPENED').length}
+            </p>
+          </div>
+          <div className="bg-yellow-50 rounded-lg p-4">
+            <p className="text-sm text-gray-600">Assigned</p>
+            <p className="text-2xl font-bold text-yellow-600">
+              {complaints.filter(c => c.status === 'ASSIGNED').length}
+            </p>
+          </div>
+          <div className="bg-indigo-50 rounded-lg p-4">
+            <p className="text-sm text-gray-600">In Progress</p>
+            <p className="text-2xl font-bold text-indigo-600">
+              {complaints.filter(c => c.status === 'IN_PROGRESS').length}
+            </p>
+          </div>
+          <div className="bg-green-50 rounded-lg p-4">
+            <p className="text-sm text-gray-600">Resolved</p>
+            <p className="text-2xl font-bold text-green-600">
+              {complaints.filter(c => c.status === 'RESOLVED' || c.status === 'CLOSED').length}
+            </p>
+          </div>
+        </div>
+
         <DataTable data={complaints} columns={columns} />
       </div>
 
@@ -134,6 +196,10 @@ export default function ComplaintStatusPage() {
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
               <div>
+                <p className="text-sm text-gray-600">Complaint Number</p>
+                <p className="font-medium font-mono text-orange-600">{selectedComplaint.complaintNumber || '-'}</p>
+              </div>
+              <div>
                 <p className="text-sm text-gray-600">Complaint Date</p>
                 <p className="font-medium">{formatDate(selectedComplaint.createdAt)}</p>
               </div>
@@ -142,6 +208,10 @@ export default function ComplaintStatusPage() {
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedComplaint.status)}`}>
                   {selectedComplaint.status}
                 </span>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Assigned To</p>
+                <p className="font-medium">{selectedComplaint.assignedTo?.name || 'Not yet assigned'}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Product Name</p>
@@ -157,12 +227,18 @@ export default function ComplaintStatusPage() {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Branch</p>
-                <p className="font-medium">{selectedComplaint.branch?.name || '-'}</p>
+                <p className="font-medium">{selectedComplaint.branch?.name || selectedComplaint.location?.name || '-'}</p>
               </div>
               <div className="col-span-2">
                 <p className="text-sm text-gray-600">Problem Description</p>
-                <p className="font-medium">{selectedComplaint.comments || 'No description provided'}</p>
+                <p className="font-medium">{selectedComplaint.comments || selectedComplaint.description || 'No description provided'}</p>
               </div>
+              {selectedComplaint.resolution && (
+                <div className="col-span-2">
+                  <p className="text-sm text-gray-600">Resolution</p>
+                  <p className="font-medium text-green-700">{selectedComplaint.resolution}</p>
+                </div>
+              )}
             </div>
 
             {selectedComplaint.callLogs && selectedComplaint.callLogs.length > 0 && (

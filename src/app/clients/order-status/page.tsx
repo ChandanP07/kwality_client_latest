@@ -10,6 +10,7 @@ import { api } from '@/lib/api';
 
 interface Order {
   id: string;
+  orderNumber?: string;
   orderDate: string;
   productName: string;
   serialNumber: string;
@@ -21,10 +22,18 @@ interface Order {
   state?: string;
   poNumber?: string;
   comments?: string;
+  notes?: string;
   type?: string;
   modelNumber?: string;
   city?: { name: string };
-  location?: { name: string };
+  location?: { name: string; address?: string };
+  dispatches?: Array<{
+    status: string;
+    trackingNumber?: string;
+    courierCompany?: string;
+    deliveryDate?: string;
+    dispatchDate?: string;
+  }>;
 }
 
 export default function OrderStatusPage() {
@@ -52,7 +61,13 @@ export default function OrderStatusPage() {
 
   const fetchOrders = async () => {
     try {
-      const data = await api.get<Order[]>('/orders');
+      const rawData = await api.get<any[]>('/orders');
+      // Flatten dispatch info into the order for easy display
+      const data: Order[] = rawData.map((order: any) => ({
+        ...order,
+        trackingNumber: order.dispatches?.[0]?.trackingNumber || order.trackingNumber || null,
+        comments: order.notes || order.comments || null,
+      }));
       setOrders(data);
       setFilteredOrders(data);
     } catch (error) {
@@ -114,6 +129,15 @@ export default function OrderStatusPage() {
 
   const columns = [
     {
+      key: 'orderNumber',
+      label: 'Order #',
+      render: (order: Order) => (
+        <span className="font-mono text-xs font-medium text-blue-600">
+          {order.orderNumber || '-'}
+        </span>
+      ),
+    },
+    {
       key: 'orderDate',
       label: 'Order Date',
       render: (order: Order) => formatDate(order.orderDate),
@@ -158,6 +182,7 @@ export default function OrderStatusPage() {
   ];
 
   const exportData = filteredOrders.map((order) => ({
+    'Order #': order.orderNumber || '-',
     'Order Date': formatDate(order.orderDate),
     'Product Name': order.productName,
     'Serial Number': order.serialNumber,
@@ -283,7 +308,7 @@ export default function OrderStatusPage() {
         )}
 
         {/* Summary Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
           <div className="bg-blue-50 rounded-lg p-4">
             <p className="text-sm text-gray-600">Total Orders</p>
             <p className="text-2xl font-bold text-primary">{filteredOrders.length}</p>
@@ -291,19 +316,25 @@ export default function OrderStatusPage() {
           <div className="bg-yellow-50 rounded-lg p-4">
             <p className="text-sm text-gray-600">Pending</p>
             <p className="text-2xl font-bold text-yellow-600">
-              {filteredOrders.filter(o => o.status === 'pending').length}
+              {filteredOrders.filter(o => o.status === 'PENDING' || o.status === 'CONFIRMED').length}
             </p>
           </div>
-          <div className="bg-blue-50 rounded-lg p-4">
+          <div className="bg-indigo-50 rounded-lg p-4">
             <p className="text-sm text-gray-600">Processing</p>
-            <p className="text-2xl font-bold text-blue-600">
-              {filteredOrders.filter(o => o.status === 'processing').length}
+            <p className="text-2xl font-bold text-indigo-600">
+              {filteredOrders.filter(o => o.status === 'PROCESSING' || o.status === 'READY').length}
+            </p>
+          </div>
+          <div className="bg-orange-50 rounded-lg p-4">
+            <p className="text-sm text-gray-600">Dispatched</p>
+            <p className="text-2xl font-bold text-orange-600">
+              {filteredOrders.filter(o => o.status === 'DISPATCHED').length}
             </p>
           </div>
           <div className="bg-green-50 rounded-lg p-4">
-            <p className="text-sm text-gray-600">Completed</p>
+            <p className="text-sm text-gray-600">Delivered</p>
             <p className="text-2xl font-bold text-green-600">
-              {filteredOrders.filter(o => o.status === 'completed').length}
+              {filteredOrders.filter(o => o.status === 'DELIVERED').length}
             </p>
           </div>
         </div>
@@ -324,6 +355,10 @@ export default function OrderStatusPage() {
         {selectedOrder && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-600">Order Number</p>
+                <p className="font-medium font-mono text-blue-600">{selectedOrder.orderNumber || '-'}</p>
+              </div>
               <div>
                 <p className="text-sm text-gray-600">Order Date</p>
                 <p className="font-medium">{formatDate(selectedOrder.orderDate)}</p>

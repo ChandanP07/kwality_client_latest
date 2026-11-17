@@ -167,17 +167,17 @@ export default function UpdateLocationsPage() {
                       onClick={() => handleBranchClick(branch)}
                       className="text-primary hover:text-blue-700 underline font-medium"
                     >
-                      {branch.name}
+                      {branch.name || (branch as any).branchName || '-'}
                     </button>
                   </td>
                   <td className="border border-gray-300 px-4 py-2 text-sm">
-                    {branch.contactName || '-'}
+                    {branch.contactName || (branch as any).contactPerson || '-'}
                   </td>
                   <td className="border border-gray-300 px-4 py-2 text-sm">
-                    {branch.contactPhone || '-'}
+                    {branch.contactPhone || (branch as any).phone || '-'}
                   </td>
                   <td className="border border-gray-300 px-4 py-2 text-sm">
-                    {branch.contactEmail || '-'}
+                    {branch.contactEmail || (branch as any).email || '-'}
                   </td>
                   <td className="border border-gray-300 px-4 py-2 text-sm">
                     <button

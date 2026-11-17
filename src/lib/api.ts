@@ -1,13 +1,11 @@
 // lib/api.ts
 // Single source of truth for all API calls in the client app.
 //
-// All calls go to NEXT_PUBLIC_API_URL under /api/client/*
-// If NEXT_PUBLIC_API_URL is not set or unreachable, it falls back to
-// the local client API routes seamlessly.
-// credentials: 'include' sends the session cookie cross-origin so
-// the server can verify the JWT.
+// All calls go to the LOCAL /api/client/* routes which share the same
+// database as the admin app. This ensures session cookies are always
+// valid (same origin) and data is properly scoped by clientId via
+// getClientSession().
 
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
 const PREFIX = '/api/client';
 
 async function request<T>(
@@ -15,46 +13,14 @@ async function request<T>(
   path: string,
   body?: unknown
 ): Promise<T> {
-  const url = `${BASE}${PREFIX}${path}`;
-  let res: Response;
+  const url = `${PREFIX}${path}`;
 
-  try {
-    res = await fetch(url, {
-      method,
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      ...(body ? { body: JSON.stringify(body) } : {}),
-    });
-  } catch (netErr) {
-    // If external BASE failed to connect (e.g. admin server not running on 3001),
-    // fallback to local client API route if BASE was configured
-    if (BASE) {
-      const localUrl = `${PREFIX}${path}`;
-      res = await fetch(localUrl, {
-        method,
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        ...(body ? { body: JSON.stringify(body) } : {}),
-      });
-    } else {
-      throw netErr;
-    }
-  }
-
-  // If external BASE returned 404, fallback to local client API route
-  if (!res.ok && res.status === 404 && BASE) {
-    const localUrl = `${PREFIX}${path}`;
-    const localRes = await fetch(localUrl, {
-      method,
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      ...(body ? { body: JSON.stringify(body) } : {}),
-    }).catch(() => null);
-
-    if (localRes && localRes.ok) {
-      return localRes.json() as Promise<T>;
-    }
-  }
+  const res = await fetch(url, {
+    method,
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  });
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
@@ -73,27 +39,10 @@ export const api = {
 };
 
 // Convenience: public endpoints that don't need auth (cities list etc.)
-// These still go to the admin app but without the /client prefix
+// These use the local /api routes as well
 export async function publicGet<T>(path: string): Promise<T> {
-  const url = `${BASE}/api${path}`;
-  let res: Response;
-
-  try {
-    res = await fetch(url, { credentials: 'include' });
-  } catch (err) {
-    if (BASE) {
-      res = await fetch(`/api${path}`, { credentials: 'include' });
-    } else {
-      throw err;
-    }
-  }
-
-  if (!res.ok && res.status === 404 && BASE) {
-    const localRes = await fetch(`/api${path}`, { credentials: 'include' }).catch(() => null);
-    if (localRes && localRes.ok) {
-      return localRes.json() as Promise<T>;
-    }
-  }
+  const url = `/api${path}`;
+  const res = await fetch(url, { credentials: 'include' });
 
   if (!res.ok) throw new Error(`Failed to fetch ${path}`);
   return res.json() as Promise<T>;
